@@ -1,0 +1,82 @@
+#!/usr/bin/python3
+import argparse
+import sys
+
+parser = argparse.ArgumentParser(
+        description="Converts vertical list into table compatible with spreadsheet or vice versa."
+        )
+parser.add_argument("mode", 
+                    choices=['list','table'], 
+                    help="The type of text the program will convert into.")
+parser.add_argument("orientation",
+                    choices=['row','column'],
+                    nargs='?',
+                    default='column')
+parser.add_argument("infile",
+                    nargs='?',
+                    default=sys.stdin,
+                    type=argparse.FileType("r"),
+                    help="The file the program will read and convert. '-' for stdin.")
+parser.add_argument("outfile",
+                    nargs='?',
+                    default=sys.stdout,
+                    type=argparse.FileType("w"),
+                    help="The file the program will write the converted file in. '-' for stdout.")
+
+args = parser.parse_args()
+text = args.infile.read()
+
+if text == '':
+    print("Input file is empty", file=sys.stderr)
+    sys.exit(1)
+
+if args.mode == 'list':
+    cols = len(text.splitlines()[0].split('\t'))
+    rows = len(text.splitlines())
+    cells = []
+    for l in text.splitlines():
+        for c in l.split('\t'):
+            cells.append(c)
+    if args.orientation == 'column':
+        for x in range(cols):
+            for y in range(rows):
+                args.outfile.write(cells[x+cols*y] + '\n')
+            args.outfile.write('\n' if x < cols-1 else '')
+    elif args.orientation == 'row':
+        for y in range(rows):
+            for x in range(cols):
+                args.outfile.write(cells[x+cols*y] + '\n')
+            args.outfile.write('\n' if y < rows-1 else '')
+elif args.mode == 'table':
+    batchlen = 0
+    batches = 0
+    prev_batchlen = 0
+    cells = text.splitlines()
+    for i in range(len(cells)):
+        if cells[i-batches] != '':
+            batchlen += 1
+        else:
+            if prev_batchlen != 0 and batchlen != prev_batchlen:
+                print("The amount of cells in a batch is not symmetrical with each other", file=sys.stderr)
+                print("batchlen: " + str(batchlen), file=sys.stderr)
+                print("prev_batchlen: " + str(prev_batchlen), file=sys.stderr)
+                sys.exit(1)
+            cells.pop(i-batches)
+            batches += 1
+            prev_batchlen = batchlen
+            batchlen = 0
+    batches += 1
+    if batches != 1:
+        batchlen = prev_batchlen
+    if args.orientation == 'column':
+        for x in range(batchlen):
+            for y in range(batches):
+                tab = '\t' if y < batches-1 else ''
+                args.outfile.write(cells[x+batchlen*y] + tab)
+            args.outfile.write('\n')
+    elif args.orientation == 'row':
+        for y in range(batches):
+            for x in range(batchlen):
+                tab = '\t' if x < batchlen-1 else ''
+                args.outfile.write(cells[x+batchlen*y] + tab)
+            args.outfile.write('\n')
