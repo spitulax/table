@@ -78,7 +78,6 @@ This script operates on a concept of "table" and "list" with a text as the value
 > ```
 
 ## Current Issues
-- This script does not have a way to use pipe.
 - This script cannot work with tables that have an empty cell.
 > Empty cells are converted into empty lines in list, the problem is empty lines are used to separate batches with one another.
 > If you get an error that a batch is not symmetrical with each other when converting into table, either the list doesn't correspond to valid table or the list have an empty cell which may resulted from converting a table with empty cell to a list.
